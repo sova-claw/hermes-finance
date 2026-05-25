@@ -68,6 +68,13 @@ def get_maybe_accounts() -> list:
     return data.get("accounts", data) if isinstance(data, dict) else data
 
 
+def create_maybe_account(name: str, currency: str, balance: float) -> dict:
+    payload = {"account": {"name": name, "currency": currency, "balance": balance, "accountable_type": "Depository"}}
+    r = httpx.post(f"{MAYBE_API_URL}/api/v1/accounts", headers=maybe_headers(), json=payload, timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
 def post_transaction(maybe_account_id: str, tx: dict) -> bool:
     amount_minor = tx["amount"]  # kopecks / cents (signed)
     if amount_minor == 0:
@@ -150,43 +157,65 @@ def sync_account(mono_id: str, maybe_id: str, fetch_days: int) -> None:
     log.info("account=%s synced %d transactions", mono_id, total)
 
 
-def setup_mode() -> None:
-    log.info("=== SETUP MODE — ACCOUNT_MAPPINGS not set ===")
+ACCOUNT_TYPE_NAMES = {
+    "black": "Black",
+    "white": "White",
+    "fop": "FOP",
+    "eAid": "eAid",
+    "madeInUkraine": "Made in Ukraine",
+    "iron": "Iron",
+    "platinum": "Platinum",
+    "yellow": "Yellow",
+}
+
+# Only sync account types that typically have real transactions
+SYNC_ACCOUNT_TYPES = {"black", "white", "fop", "platinum", "iron", "yellow"}
+
+
+def auto_setup() -> None:
+    """Auto-create Maybe Finance accounts for all Monobank accounts and print ACCOUNT_MAPPINGS."""
+    log.info("=== AUTO SETUP — creating Maybe Finance accounts from Monobank ===")
     info = get_client_info()
     log.info("Monobank client: %s", info.get("name"))
-    log.info("--- Monobank accounts ---")
-    for acc in info.get("accounts", []):
-        currency = CURRENCY_MAP.get(acc.get("currencyCode", 980), "?")
+
+    mono_accounts = [
+        acc for acc in info.get("accounts", [])
+        if acc.get("type") in SYNC_ACCOUNT_TYPES
+    ]
+
+    if not mono_accounts:
+        log.warning("No syncable Monobank accounts found (types: %s)", SYNC_ACCOUNT_TYPES)
+        return
+
+    mappings = []
+    for acc in mono_accounts:
+        currency = CURRENCY_MAP.get(acc.get("currencyCode", 980), "UAH")
         balance = acc.get("balance", 0) / 100.0
-        log.info(
-            "  id=%-36s  type=%-12s  currency=%s  balance=%.2f  iban=%s",
-            acc["id"],
-            acc.get("type", "?"),
-            currency,
-            balance,
-            acc.get("iban", ""),
-        )
-    log.info("--- Maybe Finance accounts ---")
-    try:
-        for acc in get_maybe_accounts():
-            log.info(
-                "  id=%-36s  name=%-30s  currency=%s",
-                acc.get("id", "?"),
-                acc.get("name", "?"),
-                acc.get("currency", "?"),
-            )
-    except Exception as e:
-        log.error("Could not fetch Maybe Finance accounts: %s", e)
-    log.info("")
-    log.info("Next step: create matching accounts in Maybe Finance UI, then set:")
-    log.info("  ACCOUNT_MAPPINGS=<mono_id>:<maybe_id>,<mono_id2>:<maybe_id2>")
-    log.info("Restart the service once ACCOUNT_MAPPINGS is set.")
+        acc_type = acc.get("type", "?")
+        name = f"Monobank {ACCOUNT_TYPE_NAMES.get(acc_type, acc_type)} {currency}"
+
+        log.info("Creating Maybe Finance account: %s (balance=%.2f %s)", name, balance, currency)
+        try:
+            created = create_maybe_account(name, currency, balance)
+            maybe_id = created.get("id")
+            log.info("  → created id=%s", maybe_id)
+            mappings.append(f"{acc['id']}:{maybe_id}")
+        except Exception as e:
+            log.error("  → failed to create account %s: %s", name, e)
+
+    if mappings:
+        mapping_str = ",".join(mappings)
+        log.info("")
+        log.info("=== AUTO SETUP COMPLETE ===")
+        log.info("Set this Railway variable and restart:")
+        log.info("  ACCOUNT_MAPPINGS=%s", mapping_str)
+        log.info("Also set FETCH_DAYS=90 for initial backfill, then change back to 2.")
 
 
 def run() -> None:
     mappings = parse_mappings()
     if not mappings:
-        setup_mode()
+        auto_setup()
         return
 
     log.info("Syncing %d account(s), FETCH_DAYS=%d", len(mappings), FETCH_DAYS)
