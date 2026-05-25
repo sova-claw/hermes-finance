@@ -4,7 +4,7 @@ class Api::V1::AccountsController < Api::V1::BaseController
   include Pagy::Backend
 
   before_action :ensure_read_scope, only: %i[index show]
-  before_action :ensure_write_scope, only: %i[create]
+  before_action :ensure_write_scope, only: %i[create destroy]
 
   def index
     @per_page = safe_per_page_param
@@ -51,6 +51,17 @@ class Api::V1::AccountsController < Api::V1::BaseController
       error: "internal_server_error",
       message: "An unexpected error occurred"
     }, status: :internal_server_error
+  end
+
+  def destroy
+    @account = accounts_scope.find(params[:id])
+    @account.destroy!
+    render json: { message: "Account deleted successfully" }, status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "not_found", message: "Account not found" }, status: :not_found
+  rescue => e
+    Rails.logger.error "AccountsController#destroy error: #{e.message}"
+    render json: { error: "internal_server_error", message: "An unexpected error occurred" }, status: :internal_server_error
   end
 
   def create
