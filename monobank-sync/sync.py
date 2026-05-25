@@ -396,11 +396,44 @@ def auto_setup() -> None:
 # Main loop
 # ---------------------------------------------------------------------------
 
+def discover_mappings() -> dict:
+    """Build mono_id→maybe_id map by matching account names in Maybe Finance."""
+    try:
+        maybe_accounts = get_maybe_accounts()
+    except Exception as e:
+        log.warning("Could not fetch Maybe Finance accounts: %s", e)
+        return {}
+
+    maybe_by_name = {a["name"]: a["id"] for a in maybe_accounts}
+
+    try:
+        info = get_client_info()
+    except Exception as e:
+        log.warning("Could not fetch Monobank client info: %s", e)
+        return {}
+
+    mappings: dict = {}
+    for acc in info.get("accounts", []):
+        if acc.get("type") not in SYNC_ACCOUNT_TYPES:
+            continue
+        currency = CURRENCY_MAP.get(acc.get("currencyCode", 980), "UAH")
+        acc_type = acc.get("type", "?")
+        name = f"Monobank {ACCOUNT_TYPE_NAMES.get(acc_type, acc_type)} {currency}"
+        maybe_id = maybe_by_name.get(name)
+        if maybe_id:
+            mappings[acc["id"]] = maybe_id
+        else:
+            log.warning("No Maybe Finance account for Monobank account: %s", name)
+    return mappings
+
+
 def run() -> None:
-    # Re-read on every iteration so a variable update + restart picks it up.
-    account_mappings = os.environ.get("ACCOUNT_MAPPINGS", "")
-    log.info("ACCOUNT_MAPPINGS env = %r", account_mappings[:60] if account_mappings else "<empty>")
-    mappings = parse_mappings(account_mappings)
+    # Prefer explicit ACCOUNT_MAPPINGS env var; fall back to auto-discovery by name.
+    # Auto-discovery removes the deployment race condition that plagued the env var approach.
+    mappings = parse_mappings(os.environ.get("ACCOUNT_MAPPINGS", ""))
+    if not mappings:
+        mappings = discover_mappings()
+
     if not mappings:
         auto_setup()
         return
