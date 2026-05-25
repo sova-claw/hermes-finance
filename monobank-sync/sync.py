@@ -282,9 +282,9 @@ def post_transaction(maybe_account_id: str, tx: dict) -> bool:
 # Account mappings
 # ---------------------------------------------------------------------------
 
-def parse_mappings() -> dict:
+def parse_mappings(raw: str = "") -> dict:
     mappings = {}
-    for pair in ACCOUNT_MAPPINGS.split(","):
+    for pair in raw.split(","):
         pair = pair.strip()
         if ":" in pair:
             mono_id, maybe_id = pair.split(":", 1)
@@ -397,7 +397,10 @@ def auto_setup() -> None:
 # ---------------------------------------------------------------------------
 
 def run() -> None:
-    mappings = parse_mappings()
+    # Re-read on every iteration so a variable update + restart picks it up.
+    account_mappings = os.environ.get("ACCOUNT_MAPPINGS", "")
+    log.info("ACCOUNT_MAPPINGS env = %r", account_mappings[:60] if account_mappings else "<empty>")
+    mappings = parse_mappings(account_mappings)
     if not mappings:
         auto_setup()
         return
