@@ -41,7 +41,7 @@ def mono_headers() -> dict:
 
 
 def maybe_headers() -> dict:
-    return {"Authorization": f"Bearer {MAYBE_API_KEY}", "Content-Type": "application/json"}
+    return {"X-Api-Key": MAYBE_API_KEY, "Content-Type": "application/json"}
 
 
 def get_client_info() -> dict:
