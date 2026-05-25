@@ -32,9 +32,68 @@ CURRENCY_MAP = {
     203: "CZK",
 }
 
-CHUNK_DAYS = 31  # Monobank statement max window
+CHUNK_DAYS = 31       # Monobank statement max window
 RATE_LIMIT_SLEEP = 65  # seconds between Monobank requests
 
+# ---------------------------------------------------------------------------
+# MCC → category name mapping
+# ---------------------------------------------------------------------------
+_MCC_RANGES: list[tuple] = [
+    (range(5811, 5815), "Food & Drink"),   # restaurants, bars, fast food
+    (range(5441, 5443), "Food & Drink"),   # candy/confectionery
+    (range(5411, 5413), "Groceries"),      # grocery stores
+    (range(5422, 5423), "Groceries"),      # meat provisioners
+    (range(4111, 4114), "Transportation"), # local/suburban commuter transit
+    ((5541, 5542), "Transportation"),      # gas stations
+    (range(7512, 7514), "Transportation"), # car rentals
+    (range(5912, 5913), "Healthcare"),     # drug stores / pharmacies
+    (range(8011, 8099), "Healthcare"),     # medical services
+    (range(5600, 5700), "Shopping"),       # clothing & accessories
+    (range(5940, 5960), "Shopping"),       # hobby, toy, book stores
+    (range(7832, 7835), "Entertainment"),  # cinemas
+    (range(7991, 7995), "Entertainment"),  # amusement parks, sports
+    (range(3000, 3350), "Travel"),         # airlines
+    (range(7011, 7013), "Travel"),         # hotels/motels
+    (range(5734, 5736), "Subscriptions"),  # computer/music stores
+    (range(7372, 7380), "Subscriptions"),  # computer programming/services
+]
+
+_MCC_LOOKUP: dict[int, str] = {}
+for _key, _cat in _MCC_RANGES:
+    for _mcc in _key:
+        _MCC_LOOKUP[_mcc] = _cat
+
+CATEGORY_COLORS = {
+    "Food & Drink":   "#f97316",
+    "Groceries":      "#407706",
+    "Transportation": "#0ea5e9",
+    "Healthcare":     "#4da568",
+    "Shopping":       "#3b82f6",
+    "Entertainment":  "#a855f7",
+    "Travel":         "#2563eb",
+    "Subscriptions":  "#6366f1",
+}
+
+# In-memory cache: category name → Maybe Finance category id
+_category_cache: dict[str, str] = {}
+
+ACCOUNT_TYPE_NAMES = {
+    "black": "Black",
+    "white": "White",
+    "fop":   "FOP",
+    "eAid":  "eAid",
+    "madeInUkraine": "Made in Ukraine",
+    "iron":     "Iron",
+    "platinum": "Platinum",
+    "yellow":   "Yellow",
+}
+
+SYNC_ACCOUNT_TYPES = {"black", "white", "fop", "platinum", "iron", "yellow"}
+
+
+# ---------------------------------------------------------------------------
+# HTTP helpers
+# ---------------------------------------------------------------------------
 
 def mono_headers() -> dict:
     return {"X-Token": MONOBANK_TOKEN}
@@ -43,6 +102,10 @@ def mono_headers() -> dict:
 def maybe_headers() -> dict:
     return {"X-Api-Key": MAYBE_API_KEY, "Content-Type": "application/json"}
 
+
+# ---------------------------------------------------------------------------
+# Monobank API
+# ---------------------------------------------------------------------------
 
 def get_client_info() -> dict:
     r = httpx.get(f"{MONOBANK_API}/personal/client-info", headers=mono_headers(), timeout=30)
@@ -54,12 +117,16 @@ def get_statement(account_id: str, from_ts: int, to_ts: int) -> list:
     url = f"{MONOBANK_API}/personal/statement/{account_id}/{from_ts}/{to_ts}"
     r = httpx.get(url, headers=mono_headers(), timeout=30)
     if r.status_code == 429:
-        log.warning("Rate limited by Monobank, sleeping 65s")
+        log.warning("Rate limited by Monobank, sleeping %ds", RATE_LIMIT_SLEEP)
         time.sleep(RATE_LIMIT_SLEEP)
         r = httpx.get(url, headers=mono_headers(), timeout=30)
     r.raise_for_status()
     return r.json()
 
+
+# ---------------------------------------------------------------------------
+# Maybe Finance API
+# ---------------------------------------------------------------------------
 
 def get_maybe_accounts() -> list:
     r = httpx.get(f"{MAYBE_API_URL}/api/v1/accounts", headers=maybe_headers(), timeout=30)
@@ -69,10 +136,55 @@ def get_maybe_accounts() -> list:
 
 
 def create_maybe_account(name: str, currency: str, balance: float) -> dict:
-    payload = {"account": {"name": name, "currency": currency, "balance": balance, "accountable_type": "Depository"}}
+    payload = {
+        "account": {
+            "name": name,
+            "currency": currency,
+            "balance": balance,
+            "accountable_type": "Depository",
+        }
+    }
     r = httpx.post(f"{MAYBE_API_URL}/api/v1/accounts", headers=maybe_headers(), json=payload, timeout=30)
     r.raise_for_status()
     return r.json()
+
+
+def get_or_create_category(name: str) -> str | None:
+    """Return Maybe Finance category id, creating it if necessary."""
+    global _category_cache
+    if not _category_cache:
+        # Populate cache on first call
+        try:
+            r = httpx.get(f"{MAYBE_API_URL}/api/v1/categories", headers=maybe_headers(), timeout=30)
+            r.raise_for_status()
+            data = r.json()
+            cats = data.get("categories", data) if isinstance(data, dict) else data
+            for cat in cats:
+                _category_cache[cat["name"]] = cat["id"]
+        except Exception as e:
+            log.warning("Failed to fetch categories: %s", e)
+            return None
+
+    if name in _category_cache:
+        return _category_cache[name]
+
+    color = CATEGORY_COLORS.get(name, "#737373")
+    try:
+        r = httpx.post(
+            f"{MAYBE_API_URL}/api/v1/categories",
+            headers=maybe_headers(),
+            json={"category": {"name": name, "color": color}},
+            timeout=30,
+        )
+        if r.status_code in (200, 201):
+            cat_id = r.json().get("id")
+            if cat_id:
+                _category_cache[name] = cat_id
+                return cat_id
+        log.warning("Failed to create category %s: %s %s", name, r.status_code, r.text[:200])
+    except Exception as e:
+        log.warning("Exception creating category %s: %s", name, e)
+    return None
 
 
 def post_transaction(maybe_account_id: str, tx: dict) -> bool:
@@ -84,9 +196,29 @@ def post_transaction(maybe_account_id: str, tx: dict) -> bool:
     nature = "income" if amount_minor > 0 else "expense"
     currency = CURRENCY_MAP.get(tx.get("currencyCode", 980), "UAH")
     date = datetime.fromtimestamp(tx["time"], tz=timezone.utc).strftime("%Y-%m-%d")
-    name = tx.get("description") or tx.get("comment") or "Monobank"
 
-    payload = {
+    # Phase 2A: separate description (merchant name) from comment (user note)
+    name = tx.get("description") or "Monobank"
+    notes = tx.get("comment") or None
+
+    # Phase 2B: MCC-based category
+    category_id = None
+    mcc = tx.get("mcc")
+    if mcc:
+        cat_name = _MCC_LOOKUP.get(int(mcc))
+        if cat_name:
+            category_id = get_or_create_category(cat_name)
+
+    # Phase 3A: pending/hold flag + Phase 3B: foreign currency exchange rate
+    extra: dict = {}
+    if tx.get("hold"):
+        extra["monobank"] = {"pending": True}
+
+    operation_amount = tx.get("operationAmount")
+    if operation_amount and abs(operation_amount) > 0 and abs(operation_amount) != abs(amount_minor):
+        extra["exchange_rate"] = round(abs(amount_minor) / abs(operation_amount), 6)
+
+    payload: dict = {
         "transaction": {
             "account_id": maybe_account_id,
             "name": name,
@@ -98,6 +230,12 @@ def post_transaction(maybe_account_id: str, tx: dict) -> bool:
             "source": "monobank",
         }
     }
+    if notes:
+        payload["transaction"]["notes"] = notes
+    if category_id:
+        payload["transaction"]["category_id"] = category_id
+    if extra:
+        payload["transaction"]["extra"] = extra
 
     r = httpx.post(
         f"{MAYBE_API_URL}/api/v1/transactions",
@@ -106,13 +244,43 @@ def post_transaction(maybe_account_id: str, tx: dict) -> bool:
         timeout=30,
     )
 
-    if r.status_code in (200, 201, 422):
-        # 422 = duplicate (external_id already exists) — idempotent
+    if r.status_code in (200, 201):
+        # Phase 3C: post cashback as a separate income transaction
+        cashback = tx.get("cashbackAmount", 0)
+        if cashback > 0:
+            cb_payload = {
+                "transaction": {
+                    "account_id": maybe_account_id,
+                    "name": f"Cashback: {name}",
+                    "date": date,
+                    "amount": cashback / 100.0,
+                    "nature": "income",
+                    "currency": currency,
+                    "external_id": f"monobank_cashback_{tx['id']}",
+                    "source": "monobank",
+                }
+            }
+            rc = httpx.post(
+                f"{MAYBE_API_URL}/api/v1/transactions",
+                headers=maybe_headers(),
+                json=cb_payload,
+                timeout=30,
+            )
+            if rc.status_code not in (200, 201):
+                log.warning("Cashback tx failed for %s: %s", tx["id"], rc.status_code)
         return True
+
+    if r.status_code == 422:
+        log.error("Validation error tx %s: %s %s", tx["id"], r.status_code, r.text[:400])
+        return False
 
     log.error("Failed to post tx %s: %s %s", tx["id"], r.status_code, r.text[:200])
     return False
 
+
+# ---------------------------------------------------------------------------
+# Account mappings
+# ---------------------------------------------------------------------------
 
 def parse_mappings() -> dict:
     mappings = {}
@@ -123,6 +291,10 @@ def parse_mappings() -> dict:
             mappings[mono_id.strip()] = maybe_id.strip()
     return mappings
 
+
+# ---------------------------------------------------------------------------
+# Sync
+# ---------------------------------------------------------------------------
 
 def sync_account(mono_id: str, maybe_id: str, fetch_days: int) -> None:
     now = int(datetime.now(timezone.utc).timestamp())
@@ -140,7 +312,7 @@ def sync_account(mono_id: str, maybe_id: str, fetch_days: int) -> None:
     total = 0
     for i, (start_ts, end_ts) in enumerate(chunks):
         if i > 0:
-            log.info("Sleeping %ds between Monobank requests (rate limit)", RATE_LIMIT_SLEEP)
+            log.info("Sleeping %ds between chunks (Monobank rate limit)", RATE_LIMIT_SLEEP)
             time.sleep(RATE_LIMIT_SLEEP)
 
         log.info("Fetching account=%s chunk %d/%d", mono_id, i + 1, len(chunks))
@@ -157,20 +329,9 @@ def sync_account(mono_id: str, maybe_id: str, fetch_days: int) -> None:
     log.info("account=%s synced %d transactions", mono_id, total)
 
 
-ACCOUNT_TYPE_NAMES = {
-    "black": "Black",
-    "white": "White",
-    "fop": "FOP",
-    "eAid": "eAid",
-    "madeInUkraine": "Made in Ukraine",
-    "iron": "Iron",
-    "platinum": "Platinum",
-    "yellow": "Yellow",
-}
-
-# Only sync account types that typically have real transactions
-SYNC_ACCOUNT_TYPES = {"black", "white", "fop", "platinum", "iron", "yellow"}
-
+# ---------------------------------------------------------------------------
+# Auto setup
+# ---------------------------------------------------------------------------
 
 def auto_setup() -> None:
     """Auto-create Maybe Finance accounts for all Monobank accounts and print ACCOUNT_MAPPINGS."""
@@ -212,6 +373,10 @@ def auto_setup() -> None:
         log.info("Also set FETCH_DAYS=90 for initial backfill, then change back to 2.")
 
 
+# ---------------------------------------------------------------------------
+# Main loop
+# ---------------------------------------------------------------------------
+
 def run() -> None:
     mappings = parse_mappings()
     if not mappings:
@@ -219,7 +384,10 @@ def run() -> None:
         return
 
     log.info("Syncing %d account(s), FETCH_DAYS=%d", len(mappings), FETCH_DAYS)
-    for mono_id, maybe_id in mappings.items():
+    for i, (mono_id, maybe_id) in enumerate(mappings.items()):
+        if i > 0:
+            log.info("Sleeping %ds between accounts (Monobank rate limit)", RATE_LIMIT_SLEEP)
+            time.sleep(RATE_LIMIT_SLEEP)
         sync_account(mono_id, maybe_id, FETCH_DAYS)
     log.info("Sync complete")
 

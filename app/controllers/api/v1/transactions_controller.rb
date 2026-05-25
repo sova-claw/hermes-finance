@@ -308,7 +308,7 @@ end
     def transaction_params
       params.require(:transaction).permit(
         :date, :amount, :name, :description, :notes, :currency,
-        :category_id, :merchant_id, :nature, tag_ids: []
+        :category_id, :merchant_id, :nature, tag_ids: [], extra: {}
       )
     end
 
@@ -327,7 +327,8 @@ end
         entryable_attributes: {
           category_id: transaction_params[:category_id],
           merchant_id: transaction_params[:merchant_id],
-          tag_ids: transaction_params[:tag_ids] || []
+          tag_ids: transaction_params[:tag_ids] || [],
+          extra: transaction_params[:extra]
         }
       }
       if idempotency_key_requested?
