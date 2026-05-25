@@ -60,14 +60,14 @@ class Api::V1::AccountsController < Api::V1::BaseController
       return
     end
 
-    @account = Account.create_and_sync(
+    @account = Account.create_and_sync({
       family: current_resource_owner.family,
       name: account_params[:name],
       balance: account_params[:balance].presence || 0,
       currency: account_params[:currency].presence || current_resource_owner.family.currency,
       accountable_type: accountable_type,
       accountable_attributes: {}
-    )
+    })
 
     if @account.persisted?
       render :show, status: :created
