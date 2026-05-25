@@ -348,16 +348,34 @@ def auto_setup() -> None:
         log.warning("No syncable Monobank accounts found (types: %s)", SYNC_ACCOUNT_TYPES)
         return
 
+    # Fetch existing Maybe Finance accounts to avoid creating duplicates on re-run.
+    existing_by_name: dict[str, str] = {}
+    try:
+        for a in get_maybe_accounts():
+            if a.get("name"):
+                existing_by_name[a["name"]] = a["id"]
+        log.info("Found %d existing Maybe Finance accounts", len(existing_by_name))
+    except Exception as e:
+        log.warning("Could not fetch existing accounts: %s", e)
+
     mappings = []
     for acc in mono_accounts:
         currency = CURRENCY_MAP.get(acc.get("currencyCode", 980), "UAH")
-        balance = acc.get("balance", 0) / 100.0
         acc_type = acc.get("type", "?")
         name = f"Monobank {ACCOUNT_TYPE_NAMES.get(acc_type, acc_type)} {currency}"
 
-        log.info("Creating Maybe Finance account: %s (balance=%.2f %s)", name, balance, currency)
+        if name in existing_by_name:
+            maybe_id = existing_by_name[name]
+            log.info("Reusing existing account: %s (id=%s)", name, maybe_id)
+            mappings.append(f"{acc['id']}:{maybe_id}")
+            continue
+
+        # Use balance=0 so the opening anchor (placed 2 years back by Maybe Finance)
+        # doesn't inflate the displayed balance when historical transactions are layered on top.
+        # The correct balance emerges from importing the full transaction history.
+        log.info("Creating Maybe Finance account: %s", name)
         try:
-            created = create_maybe_account(name, currency, balance)
+            created = create_maybe_account(name, currency, 0)
             maybe_id = created.get("id")
             log.info("  → created id=%s", maybe_id)
             mappings.append(f"{acc['id']}:{maybe_id}")
@@ -370,7 +388,8 @@ def auto_setup() -> None:
         log.info("=== AUTO SETUP COMPLETE ===")
         log.info("Set this Railway variable and restart:")
         log.info("  ACCOUNT_MAPPINGS=%s", mapping_str)
-        log.info("Also set FETCH_DAYS=90 for initial backfill, then change back to 2.")
+        log.info("Also set FETCH_DAYS=365 for initial backfill (more history = more accurate balance).")
+        log.info("Then change FETCH_DAYS back to 2 for steady-state.")
 
 
 # ---------------------------------------------------------------------------
