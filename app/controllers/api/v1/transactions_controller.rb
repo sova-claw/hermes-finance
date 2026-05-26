@@ -328,7 +328,7 @@ end
           category_id: transaction_params[:category_id],
           merchant_id: transaction_params[:merchant_id],
           tag_ids: transaction_params[:tag_ids] || [],
-          extra: transaction_params[:extra]
+          extra: transaction_params[:extra] || {}
         }
       }
       if idempotency_key_requested?

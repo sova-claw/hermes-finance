@@ -19,7 +19,7 @@ MAYBE_API_KEY = os.environ["MAYBE_API_KEY"]
 ACCOUNT_MAPPINGS = os.environ.get("ACCOUNT_MAPPINGS", "")
 SYNC_INTERVAL_HOURS = int(os.environ.get("SYNC_INTERVAL_HOURS", "1"))
 # Days to fetch on each run. Set to 90 for initial backfill, 2 for steady state.
-FETCH_DAYS = int(os.environ.get("FETCH_DAYS", "2"))
+FETCH_DAYS = int(os.environ.get("FETCH_DAYS", "730"))
 
 # ISO 4217 numeric → alpha
 CURRENCY_MAP = {
