@@ -18,8 +18,9 @@ MAYBE_API_KEY = os.environ["MAYBE_API_KEY"]
 # "mono_id1:maybe_id1,mono_id2:maybe_id2"
 ACCOUNT_MAPPINGS = os.environ.get("ACCOUNT_MAPPINGS", "")
 SYNC_INTERVAL_HOURS = int(os.environ.get("SYNC_INTERVAL_HOURS", "1"))
-# Days to fetch on each run. Set to 90 for initial backfill, 2 for steady state.
-FETCH_DAYS = int(os.environ.get("FETCH_DAYS", "730"))
+# Days to fetch on each run. MONOBANK_FETCH_DAYS overrides legacy FETCH_DAYS.
+# Default 730 for initial backfill; set MONOBANK_FETCH_DAYS=2 in Railway for steady-state.
+FETCH_DAYS = int(os.environ.get("MONOBANK_FETCH_DAYS", os.environ.get("FETCH_DAYS", "730")))
 
 # ISO 4217 numeric → alpha
 CURRENCY_MAP = {
