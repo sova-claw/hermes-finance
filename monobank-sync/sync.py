@@ -8,6 +8,19 @@ from datetime import datetime, timezone
 
 import httpx
 
+def _request(method: str, url: str, **kwargs) -> httpx.Response:
+    """Retry on transient connection errors (10s, 20s, 40s)."""
+    for attempt in range(4):
+        try:
+            return getattr(httpx, method)(url, timeout=30, **kwargs)
+        except (httpx.ConnectError, httpx.RemoteProtocolError, httpx.TimeoutException) as exc:
+            if attempt == 3:
+                raise
+            wait = 10 * (2 ** attempt)
+            log.warning("Request failed (%s), retry %d/3 in %ds", exc, attempt + 1, wait)
+            time.sleep(wait)
+    raise RuntimeError("unreachable")
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
 
@@ -109,18 +122,18 @@ def maybe_headers() -> dict:
 # ---------------------------------------------------------------------------
 
 def get_client_info() -> dict:
-    r = httpx.get(f"{MONOBANK_API}/personal/client-info", headers=mono_headers(), timeout=30)
+    r = _request("get", f"{MONOBANK_API}/personal/client-info", headers=mono_headers())
     r.raise_for_status()
     return r.json()
 
 
 def get_statement(account_id: str, from_ts: int, to_ts: int) -> list:
     url = f"{MONOBANK_API}/personal/statement/{account_id}/{from_ts}/{to_ts}"
-    r = httpx.get(url, headers=mono_headers(), timeout=30)
+    r = _request("get", url, headers=mono_headers())
     if r.status_code == 429:
         log.warning("Rate limited by Monobank, sleeping %ds", RATE_LIMIT_SLEEP)
         time.sleep(RATE_LIMIT_SLEEP)
-        r = httpx.get(url, headers=mono_headers(), timeout=30)
+        r = _request("get", url, headers=mono_headers())
     r.raise_for_status()
     return r.json()
 
@@ -130,7 +143,7 @@ def get_statement(account_id: str, from_ts: int, to_ts: int) -> list:
 # ---------------------------------------------------------------------------
 
 def get_maybe_accounts() -> list:
-    r = httpx.get(f"{MAYBE_API_URL}/api/v1/accounts", headers=maybe_headers(), timeout=30)
+    r = _request("get", f"{MAYBE_API_URL}/api/v1/accounts", headers=maybe_headers())
     r.raise_for_status()
     data = r.json()
     return data.get("accounts", data) if isinstance(data, dict) else data
@@ -145,7 +158,7 @@ def create_maybe_account(name: str, currency: str, balance: float) -> dict:
             "accountable_type": "Depository",
         }
     }
-    r = httpx.post(f"{MAYBE_API_URL}/api/v1/accounts", headers=maybe_headers(), json=payload, timeout=30)
+    r = _request("post", f"{MAYBE_API_URL}/api/v1/accounts", headers=maybe_headers(), json=payload)
     r.raise_for_status()
     return r.json()
 
@@ -156,7 +169,7 @@ def get_or_create_category(name: str) -> str | None:
     if not _category_cache:
         # Populate cache on first call
         try:
-            r = httpx.get(f"{MAYBE_API_URL}/api/v1/categories", headers=maybe_headers(), timeout=30)
+            r = _request("get", f"{MAYBE_API_URL}/api/v1/categories", headers=maybe_headers())
             r.raise_for_status()
             data = r.json()
             cats = data.get("categories", data) if isinstance(data, dict) else data
@@ -171,11 +184,11 @@ def get_or_create_category(name: str) -> str | None:
 
     color = CATEGORY_COLORS.get(name, "#737373")
     try:
-        r = httpx.post(
+        r = _request(
+            "post",
             f"{MAYBE_API_URL}/api/v1/categories",
             headers=maybe_headers(),
             json={"category": {"name": name, "color": color}},
-            timeout=30,
         )
         if r.status_code in (200, 201):
             cat_id = r.json().get("id")
@@ -238,11 +251,11 @@ def post_transaction(maybe_account_id: str, tx: dict) -> bool:
     if extra:
         payload["transaction"]["extra"] = extra
 
-    r = httpx.post(
+    r = _request(
+        "post",
         f"{MAYBE_API_URL}/api/v1/transactions",
         headers=maybe_headers(),
         json=payload,
-        timeout=30,
     )
 
     if r.status_code in (200, 201):
@@ -261,11 +274,11 @@ def post_transaction(maybe_account_id: str, tx: dict) -> bool:
                     "source": "monobank",
                 }
             }
-            rc = httpx.post(
+            rc = _request(
+                "post",
                 f"{MAYBE_API_URL}/api/v1/transactions",
                 headers=maybe_headers(),
                 json=cb_payload,
-                timeout=30,
             )
             if rc.status_code not in (200, 201):
                 log.warning("Cashback tx failed for %s: %s", tx["id"], rc.status_code)
