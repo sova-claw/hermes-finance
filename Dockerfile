@@ -3,7 +3,8 @@ COPY --from=ghcr.io/astral-sh/uv:0.5.4 /uv /uvx /bin/
 
 WORKDIR /app
 COPY pyproject.toml .
-RUN uv pip install --system --no-cache -e ".[dev]"
+COPY finance_api/ finance_api/
+RUN uv pip install --system --no-cache .
 
 FROM python:3.12-slim AS runtime
 WORKDIR /app
