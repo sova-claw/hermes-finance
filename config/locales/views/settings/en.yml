@@ -9,6 +9,18 @@ en:
     monobank:
       show:
         page_title: "Monobank"
+        health_title: "Sync Health"
+        health_subtitle: "Data freshness based on the most recently imported entry"
+        health_status:
+          fresh: "Fresh"
+          aging: "Aging"
+          stale: "Stale"
+          unknown: "No data yet"
+        health_last_imported: "Last entry %{time} ago"
+        health_never: "No entries imported yet"
+        health_count_24h:
+          one: "1 entry imported in the last 24 hours"
+          other: "%{count} entries imported in the last 24 hours"
         status_title: "Sync Status"
         status_subtitle: "Transactions imported from your Monobank accounts"
         account_header: "Account"

@@ -1,5 +1,27 @@
 <%= content_for :page_title, t(".page_title") %>
 
+<%= settings_section title: t(".health_title"), subtitle: t(".health_subtitle") do %>
+  <div class="flex items-center gap-6 flex-wrap">
+    <div class="flex items-center gap-2">
+      <% status_color = { fresh: "bg-green-500", aging: "bg-yellow-500", stale: "bg-red-500", unknown: "bg-gray-400" }.fetch(@sync_health.status) %>
+      <span class="inline-block w-2.5 h-2.5 rounded-full <%= status_color %>"></span>
+      <span class="text-sm font-medium text-primary"><%= t(".health_status.#{@sync_health.status}") %></span>
+    </div>
+
+    <div class="text-sm text-secondary">
+      <% if @sync_health.last_imported_at %>
+        <%= t(".health_last_imported", time: time_ago_in_words(@sync_health.last_imported_at)) %>
+      <% else %>
+        <%= t(".health_never") %>
+      <% end %>
+    </div>
+
+    <div class="text-sm text-secondary">
+      <%= t(".health_count_24h", count: @sync_health.count_last_24h) %>
+    </div>
+  </div>
+<% end %>
+
 <%= settings_section title: t(".status_title"), subtitle: t(".status_subtitle") do %>
   <% if @sync_stats.any? %>
     <div class="overflow-x-auto">

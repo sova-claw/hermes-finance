@@ -2,6 +2,7 @@ class Settings::MonobankController < ApplicationController
   layout "settings"
 
   def show
+    @sync_health = MonobankSync.health(Current.family)
     @sync_stats = MonobankSync.stats(Current.family)
     @trigger_available = ENV["RAILWAY_API_TOKEN"].present? && ENV["RAILWAY_MONOBANK_SERVICE_ID"].present?
   end
