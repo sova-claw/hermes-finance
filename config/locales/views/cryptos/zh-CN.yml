@@ -1,7 +1,0 @@
----
-zh-CN:
-  cryptos:
-    edit:
-      edit: 编辑%{account}
-    new:
-      title: 请输入账户余额
