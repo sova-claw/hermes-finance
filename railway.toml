@@ -3,7 +3,6 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-preDeployCommand = "sh -c 'cd /app && alembic upgrade head'"
-startCommand = "gunicorn finance_api.main:app -c gunicorn.conf.py"
+startCommand = "sh entrypoint.sh"
 healthcheckPath = "/health"
 restartPolicyType = "ON_FAILURE"
