@@ -1,0 +1,35 @@
+# General settings
+line-length = 88
+target-version = "py312"
+preview = true
+
+# Linting rules
+[lint]
+select = [
+    "E",   # pycodestyle — style errors and line length
+    "F",   # pyflakes    — unused imports and undefined names
+    "I",   # isort       — enforce import ordering
+    "UP",  # pyupgrade   — modernise syntax to py312
+    "B",   # bugbear     — common bugs
+    "D",   # pydocstyle  — docstring presence and style
+    "DOC", # pydoclint   — validate docstring content matches signature
+    "RUF", # ruff        — ruff-specific quality rules
+]
+ignore = [
+    "B008",   # FastAPI/aiogram Depends() in function signatures
+    "D104",   # __init__.py package docstrings not required
+    "D107",   # __init__ docstrings not required
+    "DOC501", # Raises: sections too noisy with structlog patterns
+]
+
+[lint.per-file-ignores]
+"tests/**"             = ["D", "DOC"] # test code doesn't need docstrings
+"api/alembic/**"       = ["D", "DOC"] # generated migration files
+"api/gunicorn.conf.py" = ["D", "DOC"] # server config file
+
+[lint.pydocstyle]
+convention = "google"
+
+# Formatter settings
+[format]
+docstring-code-format = true

@@ -1,0 +1,29 @@
+{
+  "enabledPlugins": {
+    "github@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true
+  },
+  "mcpServers": {
+    "railway": {
+      "command": "npx",
+      "args": ["-y", "@railway/mcp-server"],
+      "env": {
+        "RAILWAY_TOKEN": "<your-railway-api-token>"
+      }
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Bash(railway *)",
+      "Bash(gh auth switch --user sova-claw)",
+      "Bash(gh pr *)",
+      "Bash(gh issue *)",
+      "Bash(uv run *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git status)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
