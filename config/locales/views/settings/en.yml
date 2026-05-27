@@ -6,6 +6,36 @@ en:
         renewal: "Your contribution continues on %{date}."
         cancellation: "Your contribution ends on %{date}."
   settings:
+    monobank:
+      show:
+        page_title: "Monobank"
+        health_title: "Sync Health"
+        health_subtitle: "Data freshness based on the most recently imported entry"
+        health_status:
+          fresh: "Fresh"
+          aging: "Aging"
+          stale: "Stale"
+          unknown: "No data yet"
+        health_last_imported: "Last entry %{time} ago"
+        health_never: "No entries imported yet"
+        health_count_24h:
+          one: "1 entry imported in the last 24 hours"
+          other: "%{count} entries imported in the last 24 hours"
+        status_title: "Sync Status"
+        status_subtitle: "Transactions imported from your Monobank accounts"
+        account_header: "Account"
+        transactions_header: "Transactions"
+        first_date_header: "First entry"
+        last_date_header: "Last entry"
+        no_data: "No Monobank transactions found. Check that the monobank-sync service is running on Railway."
+        trigger_title: "Manual Sync"
+        trigger_subtitle: "Trigger an immediate sync from Monobank"
+        trigger_button: "Trigger Sync Now"
+        trigger_not_configured_hint: "Set these Railway env vars on the hermes-finance service to enable one-click sync:"
+      create:
+        trigger_success: "Sync triggered — transactions should appear within a minute."
+        trigger_failed: "Could not reach Railway. Check RAILWAY_API_TOKEN."
+        trigger_not_configured: "Set RAILWAY_API_TOKEN and RAILWAY_MONOBANK_SERVICE_ID first."
     debugs:
       show:
         page_title: "Debug"
@@ -231,6 +261,7 @@ en:
       accounts_label: Accounts
       advanced_section_title: Advanced
       ai_prompts_label: AI Prompts
+      monobank_label: Monobank
       api_key_label: API Key
       payment_label: Payment
       categories_label: Categories
