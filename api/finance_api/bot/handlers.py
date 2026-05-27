@@ -8,16 +8,16 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import FSInputFile, Message
 
-from hermess_api.core.config import settings
-from hermess_api.domains.insights import queries
-from hermess_api.domains.insights.tools import TOOLS, dispatch
-from hermess_api.domains.sync.monobank import run_sync
+from finance_api.core.config import settings
+from finance_api.domains.insights import queries
+from finance_api.domains.insights.tools import TOOLS, dispatch
+from finance_api.domains.sync.monobank import run_sync
 
 log = structlog.get_logger(__name__)
 router = Router()
 claude = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
-SYSTEM_PROMPT = """You are Hermess, a personal finance assistant with real-time access to the user's bank data from Monobank.
+SYSTEM_PROMPT = """You are Finance Agent, a personal finance assistant with real-time access to the user's bank data from Monobank.
 
 You can call tools to get account balances, spending breakdowns, trends, and generate charts.
 Always answer in the same language the user writes in.
@@ -89,7 +89,7 @@ async def cmd_start(message: Message) -> None:
     if not _owner_only(message):
         return
     await message.answer(
-        "👋 Hi! I'm Hermess, your personal finance assistant.\n\n"
+        "👋 Hi! I'm Finance Agent, your personal finance assistant.\n\n"
         "I have access to your Monobank data. Try asking:\n"
         "• How much did I spend this month?\n"
         "• Show me a spending breakdown\n"

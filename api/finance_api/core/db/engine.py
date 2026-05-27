@@ -1,5 +1,5 @@
 from sqlmodel import create_engine, Session
-from hermess_api.core.config import settings
+from finance_api.core.config import settings
 
 engine = create_engine(
     settings.database_url,

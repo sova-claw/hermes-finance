@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from hermess_api.domains.insights.queries import get_sync_health
+from finance_api.domains.insights.queries import get_sync_health
 
 router = APIRouter()
 

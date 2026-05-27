@@ -1,7 +1,7 @@
 """Claude tool definitions and dispatcher for financial analytics."""
 from typing import Any
 
-from hermess_api.domains.insights import queries, charts
+from finance_api.domains.insights import queries, charts
 
 TOOLS: list[dict[str, Any]] = [
     {

@@ -4,9 +4,9 @@ from typing import Any
 
 from sqlmodel import Session, select, func
 
-from hermess_api.core.db.engine import engine
-from hermess_api.domains.accounts.models import Account
-from hermess_api.domains.transactions.models import Transaction
+from finance_api.core.db.engine import engine
+from finance_api.domains.accounts.models import Account
+from finance_api.domains.transactions.models import Transaction
 
 
 def _period_dates(period: str) -> tuple[date, date]:
@@ -109,7 +109,7 @@ def get_recent_transactions(limit: int = 20) -> list[dict[str, Any]]:
 
 def get_sync_health() -> dict[str, Any]:
     with Session(engine) as session:
-        from hermess_api.domains.sync.models import SyncRun
+        from finance_api.domains.sync.models import SyncRun
         last_run = session.exec(
             select(SyncRun).order_by(SyncRun.started_at.desc()).limit(1)  # type: ignore[attr-defined]
         ).first()

@@ -6,9 +6,9 @@ from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
 # Import all models so Alembic can detect them
-import hermess_api.domains.accounts.models  # noqa: F401
-import hermess_api.domains.transactions.models  # noqa: F401
-import hermess_api.domains.sync.models  # noqa: F401
+import finance_api.domains.accounts.models  # noqa: F401
+import finance_api.domains.transactions.models  # noqa: F401
+import finance_api.domains.sync.models  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])

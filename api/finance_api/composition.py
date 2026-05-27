@@ -6,11 +6,11 @@ from aiogram import Bot, Dispatcher
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 
-from hermess_api.bot.handlers import router as bot_router
-from hermess_api.core.config import settings
-from hermess_api.core.logging.setup import configure_logging
-from hermess_api.domains.sync.monobank import run_sync
-from hermess_api.routers.health import router as health_router
+from finance_api.bot.handlers import router as bot_router
+from finance_api.core.config import settings
+from finance_api.core.logging.setup import configure_logging
+from finance_api.domains.sync.monobank import run_sync
+from finance_api.routers.health import router as health_router
 
 log = structlog.get_logger(__name__)
 
@@ -21,7 +21,7 @@ def create_app() -> FastAPI:
         json=settings.environment != "local",
     )
 
-    app = FastAPI(title="Hermess API", version="0.1.0")
+    app = FastAPI(title="Finance Agent API", version="0.1.0")
     app.include_router(health_router)
 
     bot = Bot(token=settings.telegram_bot_token)

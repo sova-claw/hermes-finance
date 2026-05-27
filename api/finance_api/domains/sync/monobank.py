@@ -7,11 +7,11 @@ import httpx
 import structlog
 from sqlmodel import Session, select
 
-from hermess_api.core.config import settings
-from hermess_api.core.db.engine import engine
-from hermess_api.domains.accounts.models import Account
-from hermess_api.domains.sync.models import SyncRun
-from hermess_api.domains.transactions.models import Transaction
+from finance_api.core.config import settings
+from finance_api.core.db.engine import engine
+from finance_api.domains.accounts.models import Account
+from finance_api.domains.sync.models import SyncRun
+from finance_api.domains.transactions.models import Transaction
 
 log = structlog.get_logger(__name__)
 
