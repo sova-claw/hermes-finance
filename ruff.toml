@@ -24,8 +24,8 @@ ignore = [
 
 [lint.per-file-ignores]
 "tests/**"             = ["D", "DOC"] # test code doesn't need docstrings
-"api/alembic/**"       = ["D", "DOC"] # generated migration files
-"api/gunicorn.conf.py" = ["D", "DOC"] # server config file
+"alembic/**"       = ["D", "DOC"] # generated migration files
+"gunicorn.conf.py" = ["D", "DOC"] # server config file
 
 [lint.pydocstyle]
 convention = "google"

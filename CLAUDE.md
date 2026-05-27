@@ -3,14 +3,13 @@
 Personal finance assistant delivered via Telegram. Connects to Monobank, stores transactions in PostgreSQL, and uses Claude tool use to answer financial questions conversationally with charts.
 
 ```
-api/finance_api/   — FastAPI + aiogram + APScheduler (single Railway service)
-src/               — SDK package (future)
-tests/             — pytest integration + unit tests
+finance_api/   — FastAPI + aiogram + APScheduler (single Railway service)
+tests/         — pytest integration + unit tests
 ```
 
 ## Route Work To The Right Context
 
-- `api/finance_api/`: use `backend-developer` agent. Load `api-skill` before any edit or review.
+- `finance_api/`: use `backend-developer` agent. Load `api-skill` before any edit or review.
 - Architecture questions, new domains, structural decisions: use `software-architect` agent.
 
 ## Core Architecture Rules

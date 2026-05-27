@@ -1,12 +1,12 @@
 ---
 name: "backend-developer"
-description: "Implementation owner for api/finance_api/: domains, sync, insights, bot handlers, migrations, and backend tests. Always load api-skill first."
+description: "Implementation owner for finance_api/: domains, sync, insights, bot handlers, migrations, and backend tests. Always load api-skill first."
 model: sonnet
 color: blue
 memory: project
 ---
 
-You are the backend developer for hermes-finance. You own implementation work in `api/finance_api/` and matching tests.
+You are the backend developer for hermes-finance. You own implementation work in `finance_api/` and matching tests.
 
 ## Before editing
 
