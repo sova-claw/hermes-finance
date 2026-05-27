@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 from sqlmodel import Field, SQLModel
 
 
@@ -13,4 +12,4 @@ class Account(SQLModel, table=True):
     currency: str
     account_type: str
     balance: float = 0.0
-    synced_at: Optional[datetime] = None
+    synced_at: datetime | None = None

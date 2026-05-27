@@ -1,5 +1,8 @@
+"""FastAPI application factory."""
 import asyncio
 import threading
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 import structlog
 from aiogram import Bot, Dispatcher
@@ -16,34 +19,39 @@ log = structlog.get_logger(__name__)
 
 
 def create_app() -> FastAPI:
+    """Create and configure the FastAPI application."""
     configure_logging(
         level=settings.log_level,
         json=settings.environment != "local",
     )
-
-    app = FastAPI(title="Finance Agent API", version="0.1.0")
-    app.include_router(health_router)
 
     bot = Bot(token=settings.telegram_bot_token)
     dp = Dispatcher()
     dp.include_router(bot_router)
 
     scheduler = BackgroundScheduler()
-    scheduler.add_job(run_sync, "interval", hours=settings.sync_interval_hours, id="monobank_sync")
-    scheduler.start()
-    log.info("scheduler_started", interval_hours=settings.sync_interval_hours)
+    scheduler.add_job(
+        run_sync,
+        "interval",
+        hours=settings.sync_interval_hours,
+        id="monobank_sync",
+        max_instances=1,
+        coalesce=True,
+    )
 
-    @app.on_event("startup")
-    async def start_bot() -> None:
-        loop = asyncio.get_event_loop()
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+        scheduler.start()
         threading.Thread(
-            target=lambda: loop.run_until_complete(dp.start_polling(bot)),
+            target=lambda: asyncio.run(dp.start_polling(bot, handle_signals=False)),
             daemon=True,
         ).start()
-        log.info("telegram_bot_started")
-
-    @app.on_event("shutdown")
-    async def stop_scheduler() -> None:
+        log.info("services_started", interval_hours=settings.sync_interval_hours)
+        yield
         scheduler.shutdown(wait=False)
+        log.info("services_stopped")
+
+    app = FastAPI(title="Finance Agent API", version="0.1.0", lifespan=lifespan)
+    app.include_router(health_router)
 
     return app

@@ -1,6 +1,6 @@
 import uuid
-from datetime import date, datetime
-from typing import Any, Optional
+from datetime import date, datetime, timezone
+from typing import Any
 from sqlmodel import Field, SQLModel
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import JSONB
@@ -17,14 +17,12 @@ class Transaction(SQLModel, table=True):
     currency: str
     date: date
     description: str
-    category: Optional[str] = None
-    mcc: Optional[int] = None
-    notes: Optional[str] = None
-    extra: Optional[dict[str, Any]] = Field(
-        default=None, sa_column=Column(JSONB)
-    )
+    category: str | None = None
+    mcc: int | None = None
+    notes: str | None = None
+    extra: dict[str, Any] | None = Field(default=None, sa_column=Column(JSONB))
 
     is_pending: bool = False
     cashback_amount: float = 0.0
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
