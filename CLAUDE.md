@@ -103,8 +103,9 @@ Two primary data ingestion methods:
    - `Import` manages import sessions
    - Supports transaction and balance imports
    - Custom field mapping with transformation rules
+3. **Monobank Sync** (`monobank-sync/`): Standalone Python service that syncs Monobank → Rails via the external API. Deployed separately on Railway. Env vars: `MONOBANK_TOKEN`, `MAYBE_API_URL`, `MAYBE_API_KEY`, `SYNC_INTERVAL_HOURS` (default 1), `MONOBANK_FETCH_DAYS` (default 730). Account mappings auto-discovered by name.
 
-### Provider Integrations: Pending Transactions and FX (SimpleFIN/Plaid)
+### Provider Integrations: Pending Transactions and FX
 
 - Detection
   - SimpleFIN: pending via `pending: true` or `posted` blank/0 + `transacted_at`.
@@ -123,7 +124,7 @@ Provider support notes:
 - SimpleFIN: supports pending + FX metadata (stored under `extra["simplefin"]`).
 - Plaid: supports pending when the upstream Plaid payload includes `pending: true` (stored under `extra["plaid"]`).
 - Plaid investments: investment transactions currently do not store pending metadata.
-- Lunchflow: does not currently store pending metadata.
+- Lunchflow: supports pending (opt-in, off by default). Set `LUNCHFLOW_INCLUDE_PENDING=1` to enable; `LUNCHFLOW_DEBUG_RAW=1` for raw payload logging.
 
 ### Background Processing
 Sidekiq handles asynchronous tasks:

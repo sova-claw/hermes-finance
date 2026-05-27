@@ -1,0 +1,41 @@
+<%= content_for :page_title, t(".page_title") %>
+
+<%= settings_section title: t(".status_title"), subtitle: t(".status_subtitle") do %>
+  <% if @sync_stats.any? %>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-primary text-secondary">
+            <th class="pb-2 text-left font-medium"><%= t(".account_header") %></th>
+            <th class="pb-2 text-right font-medium"><%= t(".transactions_header") %></th>
+            <th class="pb-2 text-right font-medium"><%= t(".first_date_header") %></th>
+            <th class="pb-2 text-right font-medium"><%= t(".last_date_header") %></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-primary">
+          <% @sync_stats.each do |stat| %>
+            <tr class="py-2">
+              <td class="py-2 text-primary font-medium"><%= stat.name %></td>
+              <td class="py-2 text-right text-secondary"><%= stat.entry_count %></td>
+              <td class="py-2 text-right text-secondary"><%= l stat.first_entry_date, format: :short if stat.first_entry_date %></td>
+              <td class="py-2 text-right text-secondary"><%= l stat.last_entry_date, format: :short if stat.last_entry_date %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-secondary text-sm"><%= t(".no_data") %></p>
+  <% end %>
+<% end %>
+
+<%= settings_section title: t(".trigger_title"), subtitle: t(".trigger_subtitle") do %>
+  <% if @trigger_available %>
+    <%= form_with url: settings_monobank_path, method: :post do |f| %>
+      <%= f.submit t(".trigger_button"), class: "btn-primary" %>
+    <% end %>
+  <% else %>
+    <p class="text-secondary text-sm"><%= t(".trigger_not_configured_hint") %></p>
+    <p class="text-secondary text-xs mt-1 font-mono">RAILWAY_API_TOKEN + RAILWAY_MONOBANK_SERVICE_ID</p>
+  <% end %>
+<% end %>
