@@ -60,14 +60,29 @@ def create_app() -> FastAPI:
         coalesce=True,
     )
 
+    bot_app = None
+    if settings.telegram_bot_token:
+        from finance_api.domains.bot.runner import create_bot
+
+        bot_app = create_bot(settings.telegram_bot_token)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         scheduler.start()
         log.info("scheduler_started", interval_hours=settings.sync_interval_hours)
+        if bot_app:
+            await bot_app.initialize()
+            await bot_app.start()
+            await bot_app.updater.start_polling(drop_pending_updates=True)
+            log.info("telegram_bot_started")
         try:
             yield
         finally:
             scheduler.shutdown(wait=False)
+            if bot_app:
+                await bot_app.updater.stop()
+                await bot_app.stop()
+                await bot_app.shutdown()
 
     app = FastAPI(
         title="Finance API",
