@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from finance_api.core.config import settings
 from finance_api.core.logging.setup import configure_logging
 from finance_api.domains.sync.monobank import run_sync
-from finance_api.routers import accounts, health, sync, transactions
+from finance_api.routers import accounts, budgets, health, sync, transactions
 
 log = structlog.get_logger(__name__)
 
@@ -31,6 +31,9 @@ PostgreSQL and exposes read-only analytics endpoints.
 | Recent transactions | `GET /transactions?limit=20` |
 | Trigger a sync | `POST /sync` |
 | Last sync status | `GET /sync/status` |
+| Budget limits + spending | `GET /budgets` |
+| Set a budget limit | `POST /budgets` |
+| Remove a budget limit | `DELETE /budgets/{category}` |
 
 ## Periods
 
@@ -85,5 +88,6 @@ def create_app() -> FastAPI:
         tags=["transactions"],
     )
     app.include_router(sync.router, prefix="/sync", tags=["sync"])
+    app.include_router(budgets.router, prefix="/budgets", tags=["budgets"])
 
     return app
