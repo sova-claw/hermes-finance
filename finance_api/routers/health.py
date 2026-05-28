@@ -10,7 +10,12 @@ log = structlog.get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/health")
+@router.get(
+    "/health",
+    summary="Health check",
+    description="Always returns HTTP 200. The `sync` field shows last sync status — use this to verify the DB is reachable.",
+    tags=["health"],
+)
 def health() -> dict[str, Any]:
     """Returns service health. Always 200 — sync field shows DB status."""
     try:
