@@ -1,12 +1,17 @@
+"""Transaction domain model."""
+
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from typing import Any
-from sqlmodel import Field, SQLModel
+
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlmodel import Field, SQLModel
 
 
 class Transaction(SQLModel, table=True):
+    """Imported bank transaction with MCC-derived category."""
+
     __tablename__ = "transactions"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -25,4 +30,4 @@ class Transaction(SQLModel, table=True):
     is_pending: bool = False
     cashback_amount: float = 0.0
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

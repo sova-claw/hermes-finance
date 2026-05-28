@@ -1,4 +1,5 @@
 """Transaction and spending analytics endpoints."""
+
 from typing import Literal
 from uuid import UUID
 
@@ -16,12 +17,24 @@ Period = Literal["this_month", "last_month", "last_7d", "last_30d", "last_90d"]
     "",
     response_model=list[TransactionItem],
     summary="List recent transactions",
-    description="Returns the most recent transactions ordered by date descending. Filter by account_id to scope to one account.",
+    description=(
+        "Returns the most recent transactions ordered by date descending. "
+        "Filter by account_id to scope to one account."
+    ),
 )
 def list_transactions(
-    limit: int = Query(default=20, ge=1, le=100, description="Maximum number of transactions to return"),
-    account_id: UUID | None = Query(default=None, description="Filter to a specific account (use monobank account UUID)"),
-) -> list[dict]:
+    limit: int = Query(
+        default=20,
+        ge=1,
+        le=100,
+        description="Maximum number of transactions to return",
+    ),
+    account_id: UUID | None = Query(
+        default=None,
+        description=("Filter to a specific account (use monobank account UUID)"),
+    ),
+) -> list[dict[str, object]]:
+    """Return most recent transactions, optionally filtered by account."""
     return queries.get_recent_transactions(limit=limit, account_id=account_id)
 
 
@@ -31,17 +44,29 @@ def list_transactions(
     summary="Spending by category",
     description=(
         "Returns total spending grouped by MCC-derived category. "
-        "Use `exclude_uncategorized=true` to hide bank transfers and internal movements "
-        "that have no MCC code."
+        "Use `exclude_uncategorized=true` to hide bank transfers and "
+        "internal movements that have no MCC code."
     ),
 )
 def spending_by_category(
-    period: Period = Query(default="this_month", description="Time window to analyse"),
-    account_id: UUID | None = Query(default=None, description="Scope to a single account"),
-    exclude_uncategorized: bool = Query(default=False, description="Exclude transactions with no MCC category (bank transfers)"),
+    period: Period = Query(
+        default="this_month",
+        description="Time window to analyse",
+    ),
+    account_id: UUID | None = Query(
+        default=None,
+        description="Scope to a single account",
+    ),
+    exclude_uncategorized: bool = Query(
+        default=False,
+        description=("Exclude transactions with no MCC category (bank transfers)"),
+    ),
 ) -> dict[str, float]:
+    """Return total spending grouped by category."""
     return queries.get_spending_by_category(
-        period=period, account_id=account_id, exclude_uncategorized=exclude_uncategorized
+        period=period,
+        account_id=account_id,
+        exclude_uncategorized=exclude_uncategorized,
     )
 
 
@@ -55,7 +80,16 @@ def spending_by_category(
     ),
 )
 def monthly_trend(
-    months: int = Query(default=3, ge=1, le=24, description="Number of calendar months to include"),
-    account_id: UUID | None = Query(default=None, description="Scope to a single account"),
-) -> list[dict]:
+    months: int = Query(
+        default=3,
+        ge=1,
+        le=24,
+        description="Number of calendar months to include",
+    ),
+    account_id: UUID | None = Query(
+        default=None,
+        description="Scope to a single account",
+    ),
+) -> list[dict[str, object]]:
+    """Return month-by-month income and expense totals."""
     return queries.get_monthly_trend(months=months, account_id=account_id)

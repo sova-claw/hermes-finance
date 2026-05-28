@@ -16,12 +16,13 @@ select = [
     "RUF", # ruff        — ruff-specific quality rules
 ]
 ignore = [
-    "B008",   # FastAPI/aiogram Depends() in function signatures
+    "B008",   # FastAPI Depends() in function signatures
     "D104",   # __init__.py package docstrings not required
+    "D105",   # Magic method docstrings not required
     "D107",   # __init__ docstrings not required
+    "DOC201", # Returns: section too noisy for every function
+    "DOC402", # Yields: section too noisy for generator functions
     "DOC501", # Raises: sections too noisy with structlog patterns
-    "RUF067", # __init__ with re-exports + side-effectful setup (bot instances)
-    "RUF006", # asyncio.create_task fire-and-forget in lifespan (event loop keeps ref)
 ]
 
 [lint.per-file-ignores]

@@ -1,13 +1,13 @@
 import os
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
 import finance_api.domains.accounts.models  # noqa: F401
-import finance_api.domains.transactions.models  # noqa: F401
 import finance_api.domains.sync.models  # noqa: F401
+import finance_api.domains.transactions.models  # noqa: F401
+from alembic import context
 
 config = context.config
 
@@ -15,7 +15,7 @@ config = context.config
 def _psycopg3_url(url: str) -> str:
     for prefix in ("postgres://", "postgresql://"):
         if url.startswith(prefix):
-            return "postgresql+psycopg://" + url[len(prefix):]
+            return "postgresql+psycopg://" + url[len(prefix) :]
     return url
 
 

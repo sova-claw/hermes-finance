@@ -1,17 +1,14 @@
 """FastAPI application factory."""
-from __future__ import annotations
 
-import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.background import (  # type: ignore[import-untyped]
+    BackgroundScheduler,
+)
 from fastapi import FastAPI
-from fastapi.openapi.utils import get_openapi
 
-from finance_api.bot import bot, dp
-from finance_api.bot.handlers import router as bot_router  # noqa: F401
 from finance_api.core.config import settings
 from finance_api.core.logging.setup import configure_logging
 from finance_api.domains.sync.monobank import run_sync
@@ -29,7 +26,7 @@ PostgreSQL and exposes read-only analytics endpoints.
 |---|---|
 | Account balances | `GET /accounts` |
 | Spending by category | `GET /transactions/spending?period=this_month` |
-| Exclude bank transfers from spending | `GET /transactions/spending?exclude_uncategorized=true` |
+| Exclude bank transfers | `GET /transactions/spending?exclude_uncategorized=true` |
 | Monthly income/expense trend | `GET /transactions/trend?months=3` |
 | Recent transactions | `GET /transactions?limit=20` |
 | Trigger a sync | `POST /sync` |
@@ -45,32 +42,8 @@ All transaction endpoints accept `?account_id=<uuid>` to scope results to one ac
 """
 
 
-def _custom_openapi(app: FastAPI) -> dict:
-    if app.openapi_schema:
-        return app.openapi_schema
-    schema = get_openapi(
-        title="Finance API",
-        version="0.1.0",
-        summary="Monobank analytics wrapper for Hermess bot",
-        description=_DESCRIPTION,
-        routes=app.routes,
-    )
-    app.openapi_schema = schema
-    return schema
-
-
-async def _start_bot():
-    """Start aiogram polling in the background."""
-    log.info("telegram_bot_starting")
-    await dp.start_polling(bot)
-
-
 def create_app() -> FastAPI:
-    """Create and configure the FastAPI application.
-
-    Returns:
-        Configured FastAPI app with scheduler and Telegram bot.
-    """
+    """Create and configure the FastAPI application."""
     configure_logging(
         level=settings.log_level,
         json=settings.environment != "local",
@@ -89,25 +62,11 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         scheduler.start()
-        log.info(
-            "scheduler_started", interval_hours=settings.sync_interval_hours
-        )
-
+        log.info("scheduler_started", interval_hours=settings.sync_interval_hours)
         try:
-
-            asyncio.create_task(_start_bot())
-            log.info("telegram_bot_started")
-        except Exception as exc:
-            log.error("telegram_bot_start_failed", error=str(exc))
-
-        yield
-
-        scheduler.shutdown(wait=False)
-        try:
-            await dp.bot.session.close()
-        except Exception:
-            pass
-        log.info("shutdown_complete")
+            yield
+        finally:
+            scheduler.shutdown(wait=False)
 
     app = FastAPI(
         title="Finance API",
@@ -121,7 +80,9 @@ def create_app() -> FastAPI:
     app.include_router(health.router, tags=["health"])
     app.include_router(accounts.router, prefix="/accounts", tags=["accounts"])
     app.include_router(
-        transactions.router, prefix="/transactions", tags=["transactions"]
+        transactions.router,
+        prefix="/transactions",
+        tags=["transactions"],
     )
     app.include_router(sync.router, prefix="/sync", tags=["sync"])
 

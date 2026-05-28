@@ -4,9 +4,11 @@ Revision ID: 0001
 Revises:
 Create Date: 2026-05-27
 """
-from alembic import op
+
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
+
+from alembic import op
 
 revision = "0001"
 down_revision = None
@@ -30,7 +32,12 @@ def upgrade() -> None:
     op.create_table(
         "transactions",
         sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column("account_id", sa.Uuid(), sa.ForeignKey("accounts.id"), nullable=False),
+        sa.Column(
+            "account_id",
+            sa.Uuid(),
+            sa.ForeignKey("accounts.id"),
+            nullable=False,
+        ),
         sa.Column("monobank_id", sa.String(), nullable=False, unique=True),
         sa.Column("amount", sa.Float(), nullable=False),
         sa.Column("currency", sa.String(), nullable=False),

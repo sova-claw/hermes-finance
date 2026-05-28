@@ -1,4 +1,5 @@
 """Health check endpoint."""
+
 from typing import Any
 
 import structlog
@@ -13,7 +14,10 @@ router = APIRouter()
 @router.get(
     "/health",
     summary="Health check",
-    description="Always returns HTTP 200. The `sync` field shows last sync status — use this to verify the DB is reachable.",
+    description=(
+        "Always returns HTTP 200. The `sync` field shows last sync status "
+        "— use this to verify the DB is reachable."
+    ),
     tags=["health"],
 )
 def health() -> dict[str, Any]:

@@ -1,4 +1,5 @@
 """Structlog configuration."""
+
 import logging
 import sys
 

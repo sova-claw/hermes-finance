@@ -1,4 +1,5 @@
 """Analytics queries over transactions and accounts."""
+
 from datetime import date, timedelta
 from typing import Any
 from uuid import UUID
@@ -53,7 +54,12 @@ def get_account_balances() -> list[dict[str, Any]]:
     with Session(engine) as session:
         accounts = session.exec(select(Account)).all()
         return [
-            {"name": a.name, "currency": a.currency, "balance": a.balance, "type": a.account_type}
+            {
+                "name": a.name,
+                "currency": a.currency,
+                "balance": a.balance,
+                "type": a.account_type,
+            }
             for a in accounts
         ]
 
@@ -76,13 +82,10 @@ def get_spending_by_category(
         if account_id:
             q = q.where(Transaction.account_id == account_id)
         if exclude_uncategorized:
-            q = q.where(Transaction.category.is_not(None))  # type: ignore[attr-defined]
+            q = q.where(Transaction.category.is_not(None))  # type: ignore[union-attr]
         q = q.group_by(Transaction.category)
         rows = session.exec(q).all()
-        return {
-            (cat or "Uncategorized"): round(abs(total), 2)
-            for cat, total in rows
-        }
+        return {(cat or "Uncategorized"): round(abs(total), 2) for cat, total in rows}
 
 
 def get_monthly_trend(
@@ -95,21 +98,21 @@ def get_monthly_trend(
         year, month = _months_ago(i)
         first, last = _month_range(year, month)
 
-        with Session(engine) as session:
-            def _sum(condition: Any) -> float:
-                base = (
-                    select(func.sum(Transaction.amount))
-                    .where(Transaction.date >= first)
-                    .where(Transaction.date <= last)
-                    .where(Transaction.is_pending == False)  # noqa: E712
-                    .where(condition)
-                )
-                if account_id:
-                    base = base.where(Transaction.account_id == account_id)
-                return session.exec(base).first() or 0
+        def _sum(session: Session, start: date, end: date, condition: Any) -> float:
+            base = (
+                select(func.sum(Transaction.amount))
+                .where(Transaction.date >= start)
+                .where(Transaction.date <= end)
+                .where(Transaction.is_pending == False)  # noqa: E712
+                .where(condition)
+            )
+            if account_id:
+                base = base.where(Transaction.account_id == account_id)
+            return session.exec(base).first() or 0
 
-            income = _sum(Transaction.amount > 0)
-            expenses = _sum(Transaction.amount < 0)
+        with Session(engine) as session:
+            income = _sum(session, first, last, Transaction.amount > 0)
+            expenses = _sum(session, first, last, Transaction.amount < 0)
 
         result.append({
             "month": first.strftime("%b %Y"),
@@ -155,8 +158,12 @@ def get_sync_health() -> dict[str, Any]:
             return {"status": "never_synced"}
         return {
             "status": last_run.status,
-            "started_at": last_run.started_at.isoformat() if last_run.started_at else None,
-            "completed_at": last_run.completed_at.isoformat() if last_run.completed_at else None,
+            "started_at": (
+                last_run.started_at.isoformat() if last_run.started_at else None
+            ),
+            "completed_at": (
+                last_run.completed_at.isoformat() if last_run.completed_at else None
+            ),
             "tx_imported": last_run.tx_imported,
             "error": last_run.error,
         }
