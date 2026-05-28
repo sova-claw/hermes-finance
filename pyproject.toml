@@ -18,6 +18,8 @@ dependencies = [
     "structlog>=24.4.0",
     "apscheduler>=3.10.0",
     "httpx>=0.28.0",
+    "aiogram>=3.14.0",
+    "matplotlib>=3.9.0",
 ]
 
 [project.optional-dependencies]
