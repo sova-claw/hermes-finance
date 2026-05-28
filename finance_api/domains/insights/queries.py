@@ -143,6 +143,7 @@ def get_recent_transactions(
                 "amount": t.amount,
                 "currency": t.currency,
                 "category": t.category,
+                "is_pending": t.is_pending,
             }
             for t in txs
         ]

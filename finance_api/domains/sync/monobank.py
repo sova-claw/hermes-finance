@@ -226,6 +226,30 @@ def _sync_account(client: MonobankClient, acc: dict[str, Any], now_ts: int) -> i
     return imported
 
 
+_STALE_SYNC_HOURS = 2
+
+
+def _mark_stale_syncs(session: Session) -> None:
+    """Mark any 'running' SyncRun older than STALE_SYNC_HOURS as failed.
+
+    Guards against syncs left open by a container restart mid-run.
+    """
+    from datetime import timedelta
+
+    cutoff = _now() - timedelta(hours=_STALE_SYNC_HOURS)
+    stale = session.exec(
+        select(SyncRun)
+        .where(SyncRun.status == "running")
+        .where(SyncRun.started_at < cutoff)
+    ).all()
+    for run in stale:
+        run.status = "failed"
+        run.error = "interrupted — container restarted mid-sync"
+        run.completed_at = _now()
+        session.add(run)
+        log.warning("stale_sync_marked_failed", run_id=str(run.id))
+
+
 def run_sync() -> int:
     """Sync all Monobank accounts. Returns number of transactions imported."""
     if not _sync_lock.acquire(blocking=False):
@@ -233,6 +257,8 @@ def run_sync() -> int:
         return 0
 
     with Session(engine) as session:
+        _mark_stale_syncs(session)
+        session.commit()
         run = SyncRun(status="running")
         session.add(run)
         session.commit()

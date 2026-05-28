@@ -37,6 +37,10 @@ class TransactionItem(BaseModel):
         default=None,
         description="Spending category inferred from MCC code",
     )
+    is_pending: bool = Field(
+        default=False,
+        description="True if the transaction has not yet cleared (hold/authorisation)",
+    )
 
 
 class MonthlyTrend(BaseModel):
