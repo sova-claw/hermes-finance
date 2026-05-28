@@ -1,6 +1,6 @@
 """Category budget SQLModel."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
@@ -15,5 +15,5 @@ class CategoryBudget(SQLModel, table=True):
     category: str = Field(unique=True, index=True)
     monthly_limit: float
     currency: str = Field(default="UAH")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

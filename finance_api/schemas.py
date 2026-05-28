@@ -90,3 +90,24 @@ class HealthResponse(BaseModel):
     sync: SyncStatus | dict[str, str] = Field(
         description="Status of the last Monobank sync"
     )
+
+
+class BudgetItem(BaseModel):
+    """A single category budget with current-month spending."""
+
+    category: str = Field(description="Canonical category name, e.g. 'Food & Drink'")
+    monthly_limit: float = Field(description="Spending limit for the month")
+    currency: str = Field(description="Currency code the limit is expressed in")
+    spent: float = Field(description="Amount spent this month in this category")
+    remaining: float = Field(
+        description="monthly_limit minus spent (negative means over budget)"
+    )
+    exceeded: bool = Field(description="True when spent > monthly_limit")
+
+
+class BudgetSet(BaseModel):
+    """Confirmation of a created or updated budget."""
+
+    category: str = Field(description="Category the limit applies to")
+    monthly_limit: float = Field(description="New monthly spending limit")
+    currency: str = Field(description="Currency code")
