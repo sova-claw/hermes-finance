@@ -6,11 +6,27 @@ from uuid import UUID
 from fastapi import APIRouter, Query
 
 from finance_api.domains.insights import queries
+from finance_api.domains.transactions.categories import ALL as _ALL_CATEGORIES
 from finance_api.schemas import MonthlyTrend, TransactionItem
 
 router = APIRouter()
 
 Period = Literal["this_month", "last_month", "last_7d", "last_30d", "last_90d"]
+
+
+@router.get(
+    "/categories",
+    response_model=list[str],
+    summary="List spending categories",
+    description=(
+        "Returns the canonical list of spending category names in alphabetical order. "
+        "Use these values for `POST /budgets` and to interpret `category` fields on "
+        "transactions and spending summaries."
+    ),
+)
+def list_categories() -> list[str]:
+    """Return all canonical spending category names."""
+    return sorted(_ALL_CATEGORIES)
 
 
 @router.get(

@@ -1,7 +1,6 @@
 """Sync control endpoints."""
 
 import threading
-from typing import Any
 
 from fastapi import APIRouter
 
@@ -31,13 +30,13 @@ def trigger_sync() -> dict[str, str]:
 
 @router.get(
     "/status",
-    response_model=SyncStatus | dict[str, Any],
+    response_model=SyncStatus,
     summary="Last sync status",
     description=(
-        "Returns the status of the most recent sync run, "
-        "or `{status: never_synced}` if none has run."
+        "Returns the status of the most recent sync run. "
+        "Returns `status: never_synced` with zero/null fields if no sync has run yet."
     ),
 )
-def sync_status() -> dict[str, Any]:
+def sync_status() -> SyncStatus:
     """Return the status of the last sync run."""
-    return get_sync_health()
+    return SyncStatus(**get_sync_health())

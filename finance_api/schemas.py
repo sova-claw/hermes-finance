@@ -98,9 +98,7 @@ class HealthResponse(BaseModel):
     """Service health status."""
 
     status: str = Field(description="Always 'ok' if the API is reachable")
-    sync: SyncStatus | dict[str, str] = Field(
-        description="Status of the last Monobank sync"
-    )
+    sync: SyncStatus = Field(description="Status of the last Monobank sync")
 
 
 class BudgetItem(BaseModel):

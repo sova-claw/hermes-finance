@@ -4,9 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
-from apscheduler.schedulers.background import (  # type: ignore[import-untyped]
-    BackgroundScheduler,
-)
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 
 from finance_api.core.config import settings
