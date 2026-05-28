@@ -21,7 +21,5 @@ class Settings(BaseSettings):
     telegram_bot_token: str
     telegram_owner_id: int
 
-    anthropic_api_key: str = ""
-
 
 settings = Settings()  # type: ignore[call-arg]
