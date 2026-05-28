@@ -17,6 +17,11 @@ depends_on = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    existing = sa.inspect(conn).get_table_names()
+    if "accounts" in existing:
+        return  # schema already present, nothing to do
+
     op.create_table(
         "accounts",
         sa.Column("id", sa.Uuid(), primary_key=True),
