@@ -12,7 +12,9 @@ from finance_api.core.config import settings
 from finance_api.core.db.engine import engine
 from finance_api.domains.accounts.models import Account
 from finance_api.domains.sync.client import MonobankClient
+from finance_api.domains.sync.mcc import MCC_LOOKUP
 from finance_api.domains.sync.models import SyncRun
+from finance_api.domains.transactions import categories as cat
 from finance_api.domains.transactions.models import Transaction
 
 log = structlog.get_logger(__name__)
@@ -43,27 +45,6 @@ ACCOUNT_TYPE_NAMES = {
     "platinum": "Platinum",
     "yellow": "Yellow",
 }
-
-_MCC_RANGES: list[tuple[range | tuple[int, int], str]] = [
-    (range(5811, 5815), "Food & Drink"),
-    (range(5441, 5443), "Food & Drink"),
-    (range(5411, 5413), "Groceries"),
-    (range(5422, 5423), "Groceries"),
-    (range(4111, 4114), "Transportation"),
-    ((5541, 5542), "Transportation"),
-    (range(7512, 7514), "Transportation"),
-    (range(5912, 5913), "Healthcare"),
-    (range(8011, 8099), "Healthcare"),
-    (range(5600, 5700), "Shopping"),
-    (range(5940, 5960), "Shopping"),
-    (range(7832, 7835), "Entertainment"),
-    (range(7991, 7995), "Entertainment"),
-    (range(3000, 3350), "Travel"),
-    (range(7011, 7013), "Travel"),
-    (range(5734, 5736), "Subscriptions"),
-    (range(7372, 7380), "Subscriptions"),
-]
-MCC_LOOKUP: dict[int, str] = {mcc: cat for rng, cat in _MCC_RANGES for mcc in rng}
 
 
 def _now() -> datetime:
@@ -155,7 +136,7 @@ def _parse_cashback(
         currency=tx_currency,
         date=tx_date,
         description=f"Cashback: {description}",
-        category="Cashback",
+        category=cat.CASHBACK,
     )
 
 
