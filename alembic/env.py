@@ -5,13 +5,21 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
-# Import all models so Alembic can detect them
 import finance_api.domains.accounts.models  # noqa: F401
 import finance_api.domains.transactions.models  # noqa: F401
 import finance_api.domains.sync.models  # noqa: F401
 
 config = context.config
-config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
+
+
+def _psycopg3_url(url: str) -> str:
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
+config.set_main_option("sqlalchemy.url", _psycopg3_url(os.environ["DATABASE_URL"]))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
