@@ -18,24 +18,32 @@ Period = Literal["this_month", "last_month", "last_7d", "last_30d", "last_90d"]
     response_model=list[TransactionItem],
     summary="List recent transactions",
     description=(
-        "Returns the most recent transactions ordered by date descending. "
-        "Filter by account_id to scope to one account."
+        "Returns transactions ordered by date descending. "
+        "Use `period` to scope to a time window (e.g. `last_7d`, `this_month`). "
+        "Without `period`, returns the most recent `limit` transactions. "
+        "Filter by `account_id` to scope to one account."
     ),
 )
 def list_transactions(
     limit: int = Query(
         default=20,
         ge=1,
-        le=100,
+        le=200,
         description="Maximum number of transactions to return",
+    ),
+    period: Period | None = Query(
+        default=None,
+        description="Optional time window — returns transactions in period up to limit",
     ),
     account_id: UUID | None = Query(
         default=None,
-        description=("Filter to a specific account (use monobank account UUID)"),
+        description="Filter to a specific account (use account_id from GET /accounts)",
     ),
 ) -> list[dict[str, object]]:
-    """Return most recent transactions, optionally filtered by account."""
-    return queries.get_recent_transactions(limit=limit, account_id=account_id)
+    """Return transactions, optionally scoped to a period and account."""
+    return queries.get_recent_transactions(
+        limit=limit, period=period, account_id=account_id
+    )
 
 
 @router.get(

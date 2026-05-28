@@ -21,6 +21,10 @@ class AccountBalance(BaseModel):
             "Monobank account type: black | white | fop | platinum | iron | yellow"
         )
     )
+    synced_at: str | None = Field(
+        default=None,
+        description="ISO timestamp of the last successful sync for this account",
+    )
 
 
 class TransactionItem(BaseModel):

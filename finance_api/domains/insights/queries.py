@@ -60,6 +60,7 @@ def get_account_balances() -> list[dict[str, Any]]:
                 "currency": a.currency,
                 "balance": a.balance,
                 "type": a.account_type,
+                "synced_at": a.synced_at.isoformat() if a.synced_at else None,
             }
             for a in accounts
         ]
@@ -125,15 +126,19 @@ def get_monthly_trend(
 
 def get_recent_transactions(
     limit: int = 20,
+    period: str | None = None,
     account_id: UUID | None = None,
 ) -> list[dict[str, Any]]:
-    """Return the most recent transactions, optionally filtered by account."""
+    """Return recent transactions, optionally filtered by period and account."""
     with Session(engine) as session:
         q = (
             select(Transaction)
             .order_by(Transaction.date.desc(), Transaction.created_at.desc())  # type: ignore[attr-defined]
             .limit(limit)
         )
+        if period:
+            start, end = _period_dates(period)
+            q = q.where(Transaction.date >= start).where(Transaction.date <= end)
         if account_id:
             q = q.where(Transaction.account_id == account_id)
         txs = session.exec(q).all()
