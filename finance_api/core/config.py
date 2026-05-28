@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """All config comes from env vars. Missing required fields fail loud at startup."""
+    """All config comes from env vars. Required fields fail loud at startup."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     monobank_token: str
     sync_interval_hours: int = 1
     monobank_fetch_days: int = 730
+
+    telegram_bot_token: str
+    telegram_owner_id: int
+
+    anthropic_api_key: str = ""
 
 
 settings = Settings()  # type: ignore[call-arg]

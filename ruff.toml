@@ -20,6 +20,8 @@ ignore = [
     "D104",   # __init__.py package docstrings not required
     "D107",   # __init__ docstrings not required
     "DOC501", # Raises: sections too noisy with structlog patterns
+    "RUF067", # __init__ with re-exports + side-effectful setup (bot instances)
+    "RUF006", # asyncio.create_task fire-and-forget in lifespan (event loop keeps ref)
 ]
 
 [lint.per-file-ignores]

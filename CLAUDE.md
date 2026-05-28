@@ -1,9 +1,16 @@
 # hermes-finance Claude Scope
 
-Personal finance assistant delivered via Telegram. Connects to Monobank, stores transactions in PostgreSQL, and uses Claude tool use to answer financial questions conversationally with charts.
+Personal finance assistant delivered via Telegram. Connects to Monobank, stores transactions in PostgreSQL, and answers financial questions conversationally with charts.
 
 ```
 finance_api/   — FastAPI + aiogram + APScheduler (single Railway service)
+  bot/           — aiogram bot, handlers, commands
+  domains/
+    insights/      — tools.py (dispatch), charts.py (matplotlib), queries.py (DB)
+    sync/          — Monobank sync (APScheduler, hourly)
+    accounts/      — Account model
+    transactions/  — Transaction model
+  routers/       — REST API endpoints (HTTP fallback for Hermes)
 tests/         — pytest integration + unit tests
 ```
 
@@ -15,7 +22,7 @@ tests/         — pytest integration + unit tests
 ## Core Architecture Rules
 
 ```
-bot/handlers.py  →  domains/insights/tools.py (Claude dispatch)
+bot/handlers.py  →  domains/insights/tools.py (tool dispatch)
                  →  domains/insights/queries.py (analytics)
                  →  domains/insights/charts.py (matplotlib PNGs)
 domains/sync/monobank.py  →  DB directly (APScheduler, hourly)
@@ -43,8 +50,6 @@ Project: `hermes-finance` (sova-claw workspace)
 Deploy: push to `main` → Railway auto-deploys via Dockerfile.
 Pre-deploy: `alembic upgrade head` (configured in `railway.toml`).
 
-Use the `/use-railway` skill for any Railway operations.
-
 ## Guardrails
 
 - Never push directly to `main` for feature work — use a branch.
@@ -59,14 +64,13 @@ Use the `/use-railway` skill for any Railway operations.
 
 feat(sync): add cashback transaction handling
 fix(bot): handle empty account list in /status
-chore(deps): bump anthropic to 0.41.0
+chore(deps): bump aiogram to 3.14.0
 ```
 
 ## Workflow
 
-- `/lint-check` before committing.
+- `ruff check finance_api/` before committing.
 - `/tests-runner` to verify tests pass.
-- `/pr-description` to generate PR body.
 - `/code-review` before merging.
 
 ## Context Rules
