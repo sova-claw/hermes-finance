@@ -94,11 +94,11 @@ def _monthly_bar(data: dict | list) -> str:
     colour_expense = "#e74c3c"
     ax.bar(
         [i - w / 2 for i in x], income, w,
-        label="Income", colour=colour_income, alpha=0.85,
+        label="Income", color=colour_income, alpha=0.85,
     )
     ax.bar(
         [i + w / 2 for i in x], expenses, w,
-        label="Expenses", colour=colour_expense, alpha=0.85,
+        label="Expenses", color=colour_expense, alpha=0.85,
     )
 
     ax.set_xticks(list(x))
