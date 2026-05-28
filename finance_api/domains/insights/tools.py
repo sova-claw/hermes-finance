@@ -1,4 +1,4 @@
-"""LLM tool definitions — thin wrappers over queries.py for Claude tool use."""
+"""Tool dispatch — thin wrappers over queries.py."""
 from __future__ import annotations
 
 from finance_api.domains.insights.charts import generate_chart
@@ -9,87 +9,9 @@ from finance_api.domains.insights.queries import (
     get_spending_by_category,
 )
 
-# JSON Schema tool definitions for Claude
-TOOLS: list[dict] = [
-    {
-        "name": "get_account_balances",
-        "description": "Return current balances for all Monobank accounts.",
-        "input_schema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "get_spending_by_category",
-        "description": (
-            "Return spending totals grouped by category for a period. "
-            "Periods: this_month, last_month, last_7d, last_30d, last_90d."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "period": {
-                    "type": "string",
-                    "enum": [
-                        "this_month", "last_month", "last_7d",
-                        "last_30d", "last_90d",
-                    ],
-                    "description": "Time window. Default: this_month.",
-                },
-            },
-        },
-    },
-    {
-        "name": "get_monthly_trend",
-        "description": "Return month-by-month income and expense totals.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "months": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 24,
-                    "description": "Number of calendar months. Default: 3.",
-                },
-            },
-        },
-    },
-    {
-        "name": "get_recent_transactions",
-        "description": "Return the most recent transactions (newest first).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 100,
-                    "description": "How many transactions. Default: 20.",
-                },
-            },
-        },
-    },
-    {
-        "name": "generate_chart",
-        "description": (
-            "Render a chart PNG and return its file type. "
-            "Types: spending_pie (pie chart of categories this month), "
-            "monthly_bar (income vs expenses bar chart for last 3 months)."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "chart_type": {
-                    "type": "string",
-                    "enum": ["spending_pie", "monthly_bar"],
-                    "description": "Which chart to render.",
-                },
-            },
-            "required": ["chart_type"],
-        },
-    },
-]
-
 
 def dispatch(name: str, **kwargs) -> dict | list | str:
-    """Dispatch a tool call by name. Returns JSON-serializable data or a chart path.
+    """Dispatch a tool call by name.
 
     Returns:
         Tool-specific data (dict, list) or a file path string for charts.
