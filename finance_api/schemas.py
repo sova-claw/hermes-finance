@@ -6,12 +6,15 @@ from pydantic import BaseModel, Field
 class AccountBalance(BaseModel):
     """Current balance for a single Monobank account."""
 
+    account_id: str = Field(
+        description="Internal UUID — pass as ?account_id= to scope transaction queries"
+    )
     name: str = Field(
         description="Human-readable account name, e.g. 'Monobank Black UAH'"
     )
     currency: str = Field(description="ISO 4217 currency code, e.g. 'UAH'")
     balance: float = Field(
-        description=("Current balance in major units (kopecks converted to hryvnias)")
+        description="Current balance in major units (kopecks converted to hryvnias)"
     )
     type: str = Field(
         description=(

@@ -55,6 +55,7 @@ def get_account_balances() -> list[dict[str, Any]]:
         accounts = session.exec(select(Account)).all()
         return [
             {
+                "account_id": str(a.id),
                 "name": a.name,
                 "currency": a.currency,
                 "balance": a.balance,
