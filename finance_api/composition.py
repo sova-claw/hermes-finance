@@ -23,12 +23,13 @@ _DESCRIPTION = """
 Finance API — a thin wrapper around Monobank that syncs your bank data to
 PostgreSQL and exposes read-only analytics endpoints.
 
-## What Hermess bot should call
+## Endpoints for Hermess bot
 
 | Goal | Endpoint |
 |---|---|
 | Account balances | `GET /accounts` |
 | Spending by category | `GET /transactions/spending?period=this_month` |
+| Exclude bank transfers from spending | `GET /transactions/spending?exclude_uncategorized=true` |
 | Monthly income/expense trend | `GET /transactions/trend?months=3` |
 | Recent transactions | `GET /transactions?limit=20` |
 | Trigger a sync | `POST /sync` |
@@ -36,13 +37,11 @@ PostgreSQL and exposes read-only analytics endpoints.
 
 ## Periods
 
-`this_month`, `last_month`, `last_7d`, `last_30d`, `last_90d`
+`this_month` · `last_month` · `last_7d` · `last_30d` · `last_90d`
 
-## Sync
+## Account filtering
 
-Monobank is synced automatically every `SYNC_INTERVAL_HOURS` (default 1h).
-Trigger a manual sync with `POST /sync` — it returns immediately and runs in
-the background.
+All transaction endpoints accept `?account_id=<uuid>` to scope results to one account.
 """
 
 
@@ -118,7 +117,6 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
-    app.openapi = lambda: _custom_openapi(app)  # type: ignore[method-assign]
 
     app.include_router(health.router, tags=["health"])
     app.include_router(accounts.router, prefix="/accounts", tags=["accounts"])
