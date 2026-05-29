@@ -16,11 +16,29 @@ branch_labels = None
 depends_on = None
 
 
+def _add_missing_columns(conn: sa.engine.Connection, table: str, cols: list) -> None:
+    """Add any columns that are missing from an existing table."""
+    existing = {c["name"] for c in sa.inspect(conn).get_columns(table)}
+    for col in cols:
+        if col.name not in existing:
+            op.add_column(table, col)
+
+
 def upgrade() -> None:
     conn = op.get_bind()
-    existing = sa.inspect(conn).get_table_names()
-    if "accounts" in existing:
-        return  # schema already present, nothing to do
+    tables = sa.inspect(conn).get_table_names()
+
+    if "accounts" in tables:
+        # Table predates alembic — add any missing columns and exit.
+        _add_missing_columns(conn, "accounts", [
+            sa.Column("monobank_id", sa.String()),
+            sa.Column("name", sa.String()),
+            sa.Column("currency", sa.String()),
+            sa.Column("account_type", sa.String()),
+            sa.Column("balance", sa.Float(), server_default="0"),
+            sa.Column("synced_at", sa.DateTime()),
+        ])
+        return
 
     op.create_table(
         "accounts",

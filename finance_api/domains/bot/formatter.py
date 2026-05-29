@@ -30,6 +30,8 @@ CATEGORY_EMOJI: dict[str, str] = {
     "Uncategorized": "📦",
 }
 
+# Currencies where the symbol goes before the amount (e.g. $1,234)
+_PREFIX_CURRENCIES = {"USD", "EUR", "GBP"}
 CURRENCY_SYMBOL: dict[str, str] = {"UAH": "₴", "USD": "$", "EUR": "€", "GBP": "£"}
 
 _PERIOD_LABEL: dict[str, str] = {
@@ -49,16 +51,25 @@ def _sym(currency: str) -> str:
     return CURRENCY_SYMBOL.get(currency, currency)
 
 
+def _fmt_amount(amount: float, currency: str) -> str:
+    """Format an amount with the correct currency symbol position and precision."""
+    sym = _sym(currency)
+    # Use integers for whole amounts, two decimals otherwise
+    formatted = f"{amount:,.0f}" if amount == int(amount) else f"{amount:,.2f}"
+    if currency in _PREFIX_CURRENCIES:
+        return f"{sym}{formatted}"
+    return f"{formatted} {sym}"
+
+
 def format_balance(accounts: list[dict[str, Any]]) -> str:
     """Format account balances as HTML."""
     if not accounts:
-        return "No accounts synced yet. Run /sync first."
+        return "No accounts synced yet. Run /sync@sova_finance_bot first."
     lines = ["<b>💳 Accounts</b>", ""]
     for a in accounts:
-        sym = _sym(a["currency"])
         name = a["name"]
-        bal = a["balance"]
-        lines.append(f"<code>{name:<20} {bal:>12,.2f} {sym}</code>")
+        amount = _fmt_amount(a["balance"], a["currency"])
+        lines.append(f"<code>{name:<22}  {amount:>12}</code>")
     return "\n".join(lines)
 
 
