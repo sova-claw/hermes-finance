@@ -67,9 +67,10 @@ def format_balance(accounts: list[dict[str, Any]]) -> str:
         return "No accounts synced yet. Run /sync@sova_finance_bot first."
     lines = ["<b>💳 Accounts</b>", ""]
     for a in accounts:
+        sym = _sym(a["currency"])
         name = a["name"]
-        amount = _fmt_amount(a["balance"], a["currency"])
-        lines.append(f"<code>{name:<22}  {amount:>12}</code>")
+        bal = a["balance"]
+        lines.append(f"<code>{name:<20} {bal:>12,.2f} {sym}</code>")
     return "\n".join(lines)
 
 
