@@ -1,9 +1,11 @@
-"""fix accounts schema — add missing columns if table predates migration
+"""fix accounts schema — add columns missing from pre-migration accounts table
 
 Revision ID: 0003
 Revises: 0002
 Create Date: 2026-05-29
 """
+
+import sqlalchemy as sa
 
 from alembic import op
 
@@ -12,24 +14,38 @@ down_revision = "0002"
 branch_labels = None
 depends_on = None
 
+_TABLE = "accounts"
+
+
+def _existing_columns(conn: sa.engine.Connection) -> set[str]:
+    return {c["name"] for c in sa.inspect(conn).get_columns(_TABLE)}
+
+
+def _existing_indexes(conn: sa.engine.Connection) -> set[str]:
+    return {i["name"] for i in sa.inspect(conn).get_indexes(_TABLE)}
+
 
 def upgrade() -> None:
-    """Add any columns that are missing from an old accounts table."""
-    op.execute(
-        "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS monobank_id VARCHAR"
-    )
-    op.execute(
-        "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS balance FLOAT NOT NULL DEFAULT 0"
-    )
-    op.execute(
-        "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS synced_at TIMESTAMP"
-    )
-    # Ensure unique index exists
-    op.execute(
-        "CREATE UNIQUE INDEX IF NOT EXISTS ix_accounts_monobank_id"
-        " ON accounts (monobank_id)"
-    )
+    """Idempotently add columns that predate alembic tracking."""
+    conn = op.get_bind()
+    cols = _existing_columns(conn)
+    indexes = _existing_indexes(conn)
+
+    if "monobank_id" not in cols:
+        op.add_column(_TABLE, sa.Column("monobank_id", sa.String(), nullable=True))
+
+    if "balance" not in cols:
+        op.add_column(
+            _TABLE,
+            sa.Column("balance", sa.Float(), nullable=False, server_default="0"),
+        )
+
+    if "synced_at" not in cols:
+        op.add_column(_TABLE, sa.Column("synced_at", sa.DateTime(), nullable=True))
+
+    if "ix_accounts_monobank_id" not in indexes:
+        op.create_index("ix_accounts_monobank_id", _TABLE, ["monobank_id"], unique=True)
 
 
 def downgrade() -> None:
-    """No-op — we don't drop columns on downgrade."""
+    """No-op — column additions from a schema repair are not reverted."""
