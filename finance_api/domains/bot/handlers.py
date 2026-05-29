@@ -27,15 +27,25 @@ _VALID_PERIODS = {"this_month", "last_month", "last_7d", "last_30d", "last_90d"}
 
 async def balance(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /balance command."""
-    accounts = get_account_balances()
-    await update.message.reply_html(format_balance(accounts))
+    try:
+        accounts = get_account_balances()
+        await update.message.reply_html(format_balance(accounts))
+    except Exception as e:
+        log.error("balance_failed", error=str(e))
+        await update.message.reply_html(f"❌ Error: <code>{e}</code>")
 
 
 async def stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /stats [period] command."""
-    period = ctx.args[0] if ctx.args and ctx.args[0] in _VALID_PERIODS else "this_month"
-    spending = get_spending_by_category(period=period, exclude_uncategorized=False)
-    await update.message.reply_html(format_stats(spending, period))
+    try:
+        period = (
+            ctx.args[0] if ctx.args and ctx.args[0] in _VALID_PERIODS else "this_month"
+        )
+        spending = get_spending_by_category(period=period, exclude_uncategorized=False)
+        await update.message.reply_html(format_stats(spending, period))
+    except Exception as e:
+        log.error("stats_failed", error=str(e))
+        await update.message.reply_html(f"❌ Error: <code>{e}</code>")
 
 
 async def budget(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -78,11 +88,11 @@ async def budget(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def sync(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /sync command — trigger Monobank sync in background."""
-    await update.message.reply_html("🔄 Syncing…")
     try:
+        await update.message.reply_html("🔄 Syncing…")
         run_sync()
         status = get_sync_health()
         await update.message.reply_html(format_sync_status(status))
     except Exception as e:
         log.error("sync_failed", error=str(e))
-        await update.message.reply_html(f"❌ Sync failed: {e}")
+        await update.message.reply_html(f"❌ Sync failed: <code>{e}</code>")
